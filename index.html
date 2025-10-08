@@ -1,0 +1,418 @@
+<!--
+
+Memory Html
+
+Copyright (C) 2025 - Fatih (https://github.com/99fk)
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+-->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Memory</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%236b82f1'/%3E%3Cstop offset='1' stop-color='%239fd3c7'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect x='2' y='2' width='60' height='60' rx='14' fill='url(%23g)'/%3E%3Ctext x='32' y='42' text-anchor='middle' font-size='32' font-weight='700' fill='%23fff' font-family='Segoe UI, Roboto, Arial'%3EM%3C/text%3E%3C/svg%3E" />
+<style>
+  :root{
+    --bg: #f7f8fb;
+    --card: #ffffff;
+    --accent: #6b82f1;
+    --accent-2: #9fd3c7;
+    --text: #1e2330;
+    --muted: #5f6b7a;
+    --shadow: 0 10px 30px rgba(0,0,0,.08);
+    --radius: 18px;
+    --gap: 12px;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg: #0f1217;
+      --card: #181c24;
+      --accent: #8aa0ff;
+      --accent-2: #58c2aa;
+      --text: #eef1f7;
+      --muted: #9aa4b2;
+      --shadow: 0 10px 30px rgba(0,0,0,.4);
+    }
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0;
+    font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Apple Color Emoji", "Segoe UI Emoji";
+    background: radial-gradient(1200px 800px at 20% -10%, rgba(107,130,241,.14), transparent 60%),
+                radial-gradient(1000px 700px at 120% 10%, rgba(159,211,199,.14), transparent 60%),
+                var(--bg);
+    color:var(--text);
+    display:flex; align-items:center; justify-content:center;
+    padding: 20px;
+  }
+  .app{width:min(1100px, 100%);}
+  .topbar{
+    display:flex; gap:16px; align-items:center; justify-content:space-between;
+    margin-bottom:16px;
+  }
+  .brand{
+    display:flex; align-items:center; gap:12px;
+  }
+  .logo{
+    width:40px; height:40px; border-radius:12px; display:grid; place-items:center;
+    background: linear-gradient(135deg, var(--accent), var(--accent-2)); color:white;
+    box-shadow: var(--shadow);
+    font-weight:700;
+  }
+  h1{font-size:18px; margin:0; letter-spacing:.3px; font-weight:700}
+  .muted{color:var(--muted); font-size:13px}
+
+  .controls{
+    display:flex; flex-wrap:wrap; gap:10px; align-items:center; justify-content:flex-end;
+  }
+  select, button{
+    border:none; outline:none; appearance:none;
+    background:var(--card); color:var(--text);
+    padding:10px 12px; border-radius:12px; box-shadow: var(--shadow);
+    font-size:14px; cursor:pointer;
+  }
+  button.primary{ background: linear-gradient(135deg, var(--accent), var(--accent-2)); color:white; font-weight:600 }
+  button:active{ transform: translateY(1px) }
+
+  .stats{
+    display:flex; gap:16px; align-items:baseline; flex-wrap:wrap;
+  }
+  .pill{ background:var(--card); padding:10px 12px; border-radius:999px; box-shadow:var(--shadow); font-variant-numeric: tabular-nums; margin-bottom:10px; }
+
+  .board{
+    width:100%;
+    display:grid;
+    gap: var(--gap);
+    grid-template-columns: repeat(auto-fit, minmax(70px, 1fr));
+  }
+  @media (min-width:800px){
+    .board{ grid-template-columns: repeat(auto-fit, minmax(90px, 1fr)); }
+  }
+
+  .card{
+    relative; aspect-ratio: 3/4; border-radius: var(--radius);
+    transform-style: preserve-3d; transition: transform .45s ease; cursor: pointer;
+    box-shadow: var(--shadow); background: transparent; outline: none; border:none; padding:0;
+  }
+  .card.is-matched{ pointer-events:none; }
+  .card:focus-visible{ box-shadow: 0 0 0 3px rgba(107,130,241,.5), var(--shadow) }
+
+  .face{
+    position:absolute; inset:0; display:grid; place-items:center; border-radius: inherit;
+    backface-visibility:hidden;
+  }
+  .front{ background: var(--card); font-size: clamp(28px, 4.8vw, 44px); }
+  .back{
+    transform: rotateY(180deg);
+    background: linear-gradient(160deg, rgba(107,130,241,0.18), rgba(159,211,199,0.18));
+    display:grid; place-items:center;
+  }
+  .card.is-flipped{ transform: rotateY(180deg); }
+  .badge{
+    font-size:11px; color: var(--muted); margin-top:2px;
+  }
+
+  /* subtle appear animation */
+  @keyframes popIn{ from{ transform: scale(.9); opacity:0 } to{ transform: scale(1); opacity:1 } }
+  .board > *{ animation: popIn .35s ease both }
+
+  /* Modal */
+  .modal-backdrop{ position:fixed; inset:0; display:none; align-items:center; justify-content:center; background: rgba(0,0,0,.35); }
+  .modal{ background: var(--card); border-radius: 20px; padding: 22px; width:min(420px, 92%); box-shadow: var(--shadow); text-align:center }
+  .modal h2{ margin:0 0 6px; font-size:22px }
+  .modal p{ margin:0 0 14px; color: var(--muted) }
+  .modal .actions{ display:flex; gap:10px; justify-content:center }
+  .modal-backdrop.show{ display:flex }
+
+  /* Reduce motion preference */
+  @media (prefers-reduced-motion: reduce){
+    .card{ transition:none }
+    .board > *{ animation:none }
+  }
+</style>
+</head>
+<body>
+  <div class="app" role="application" aria-label="Memory Game">
+    <div class="topbar">
+      <div class="brand" aria-hidden="true">
+        <div class="logo">M</div>
+        <div>
+          <h1>Memory</h1>
+          <div class="muted">Calm & elegant — single player, beat your best time</div>
+        </div>
+      </div>
+      <div class="controls">
+        <label class="pill" for="size">Cards:
+          <select id="size" title="Number of cards">
+            <!-- even numbers only; pairs required -->
+            <option>12</option>
+            <option selected>16</option>
+            <option>20</option>
+            <option>24</option>
+            <option>30</option>
+            <option>36</option>
+            <option>42</option>
+            <option>48</option>
+          </select>
+        </label>
+        <button id="new" class="primary" title="Start a new game">New Game</button>
+      </div>
+    </div>
+
+    <div class="stats" aria-live="polite">
+      <div class="pill">⏱️ Time: <strong id="time">00:00.0</strong></div>
+      <div class="pill">🏆 Best (<span id="best-size">16</span>): <strong id="best">—</strong></div>
+      <div class="pill muted">Moves: <strong id="moves">0</strong></div>
+    </div>
+
+    <div id="board" class="board" aria-label="Cards board"></div>
+  </div>
+
+  <!-- Win Modal -->
+  <div id="modal" class="modal-backdrop" role="dialog" aria-modal="true" aria-hidden="true">
+    <div class="modal">
+      <h2 id="modal-title">Well done!</h2>
+      <p id="modal-sub">You finished in <strong id="final-time">00:00.0</strong> with <strong id="final-moves">0</strong> moves.</p>
+      <div class="actions">
+        <button id="again" class="primary">Play again</button>
+        <button id="close">Close</button>
+      </div>
+      <div class="badge" id="record-note" hidden>🎉 New personal best!</div>
+    </div>
+  </div>
+
+<script>
+(() => {
+  // ——— Utility ———
+  const $ = sel => document.querySelector(sel);
+  const board = $('#board');
+  const sizeSel = $('#size');
+  const newBtn = $('#new');
+  const timeEl = $('#time');
+  const bestEl = $('#best');
+  const bestSizeEl = $('#best-size');
+  const movesEl = $('#moves');
+  const modal = $('#modal');
+  const again = $('#again');
+  const closeBtn = $('#close');
+  const finalTimeEl = $('#final-time');
+  const finalMovesEl = $('#final-moves');
+  const recordNote = $('#record-note');
+
+  // Emoji pool — plenty of variety
+  const EMOJIS = [
+    '🍎','🍊','🍋','🍉','🍇','🍓','🫐','🍒','🍑','🥝','🍍','🥥','🥑','🌶️','🍄','🥕','🧄','🥦','🌽','🥔','🍪','🍰','🧁','🍫','🍬','🍩','🍿','🥨','🧇','🥞',
+    '🧀','🍖','🍗','🌭','🍔','🍟','🍕','🥙','🌮','🍣','🍤','🍛','🍜','🍚','🍱','🥟','🍙','🥮','🍥','🥪','🥗',
+    '☕','🍵','🧋','🥤','🍺','🍷','🍸','🍹','🥃','🧃','🥛','🍾',
+    '⚽','🏀','🏈','🎾','🏐','🥏','🎱','🏓','🏸','🥊','🥋','⛳','🥅','🎯','🪁','♟️','🎲','🎮','🕹️','🎧',
+    '🐶','🐱','🐭','🐹','🐰','🦊','🐻','🐼','🐨','🐯','🦁','🐮','🐷','🐸','🐵','🦄','🐔','🐧','🐦','🦉','🦅','🦆','🦇','🐺','🐗','🐴',
+    '🌸','🌼','🌻','🌺','🌷','🌹','🍁','🍂','🍃','🌿','🌵','🌲','🌳','🌞','🌝','⭐','🌙','⚡','🔥','💧','❄️','☁️','🌈',
+    '💎','💡','🔔','⏰','🔮','🧭','🧩','📚','✏️','📎','📮','📷','🎥','🎬','🎼','🎹','🥁','🎺','🎻','🎷','🎨','🖌️'
+  ];
+
+  // State
+  let deck = [];
+  let first = null, second = null;
+  let lock = false;
+  let matches = 0;
+  let moves = 0;
+  let started = false;
+  let timer = null;
+  let startTs = 0;
+
+  // Helpers
+  const shuffle = arr => arr.map(v => [Math.random(), v]).sort((a,b)=>a[0]-b[0]).map(v=>v[1]);
+  const timeFmt = ms => {
+    const t = Math.max(ms, 0);
+    const m = Math.floor(t/60000);
+    const s = Math.floor((t%60000)/1000);
+    const d = Math.floor((t%1000)/100);
+    return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}.${d}`;
+  };
+  const keyFor = n => `memory_best_${n}`;
+
+  function updateBestLabel(){
+    const n = parseInt(sizeSel.value, 10);
+    bestSizeEl.textContent = n;
+    const best = localStorage.getItem(keyFor(n));
+    bestEl.textContent = best ? timeFmt(parseInt(best,10)) : '—';
+  }
+
+  function buildDeck(n){
+    const pairs = n / 2;
+    const pool = shuffle(EMOJIS).slice(0, pairs);
+    const d = shuffle([...pool, ...pool]).map((emoji, idx) => ({ id: idx, emoji, matched:false }));
+    return d;
+  }
+
+  function clearBoard(){
+    board.innerHTML = '';
+  }
+
+  function render(){
+    clearBoard();
+    const frag = document.createDocumentFragment();
+    deck.forEach(card => {
+      const btn = document.createElement('button');
+      btn.className = 'card';
+      btn.setAttribute('aria-label', 'Card');
+      btn.setAttribute('data-id', card.id);
+      btn.innerHTML = `
+        <div class="face front">${card.revealed ? card.emoji : ''}</div>
+        <div class="face back"></div>
+      `;
+      frag.appendChild(btn);
+    });
+    board.appendChild(frag);
+  }
+
+  function flip(el){
+    el.classList.add('is-flipped');
+    const front = el.querySelector('.front');
+    const id = +el.dataset.id;
+    const card = deck[id];
+    front.textContent = card.emoji;
+  }
+
+  function unflip(el){
+    el.classList.remove('is-flipped');
+    const front = el.querySelector('.front');
+    front.textContent = '';
+  }
+
+  function markMatched(a,b){
+    a.classList.add('is-matched');
+    b.classList.add('is-matched');
+  }
+
+  function startTimer(){
+    started = true;
+    startTs = performance.now();
+    timer = setInterval(() => {
+      timeEl.textContent = timeFmt(performance.now() - startTs);
+    }, 100);
+  }
+
+  function stopTimer(){
+    clearInterval(timer); timer = null;
+  }
+
+  function reset(){
+    stopTimer();
+    started = false;
+    matches = 0; moves = 0; movesEl.textContent = '0';
+    timeEl.textContent = '00:00.0';
+    first = second = null; lock = false;
+  }
+
+  function newGame(){
+    reset();
+    const n = parseInt(sizeSel.value, 10);
+    deck = buildDeck(n);
+    render();
+    updateBestLabel();
+  }
+
+  function finish(){
+    stopTimer();
+    const elapsed = performance.now() - startTs;
+    finalTimeEl.textContent = timeFmt(elapsed);
+    finalMovesEl.textContent = moves;
+
+    // Personal best handling
+    const n = parseInt(sizeSel.value, 10);
+    const key = keyFor(n);
+    const best = localStorage.getItem(key);
+    let isRecord = false;
+    if(!best || elapsed < +best){
+      localStorage.setItem(key, String(Math.floor(elapsed)));
+      isRecord = true;
+      bestEl.textContent = timeFmt(elapsed);
+    }
+    recordNote.hidden = !isRecord;
+
+    // Show modal
+    modal.classList.add('show');
+    modal.setAttribute('aria-hidden','false');
+  }
+
+  // Event: board clicks
+  board.addEventListener('click', e => {
+    const cardEl = e.target.closest('.card');
+    if(!cardEl || lock) return;
+    const id = +cardEl.dataset.id;
+    const card = deck[id];
+    if(card.matched || cardEl.classList.contains('is-flipped')) return;
+
+    if(!started) startTimer();
+
+    flip(cardEl);
+
+    if(!first){
+      first = { id, card, el: cardEl };
+      return;
+    }
+
+    // second pick
+    second = { id, card, el: cardEl };
+    moves++; movesEl.textContent = String(moves);
+
+    if(first.card.emoji === second.card.emoji){
+      // match
+      deck[first.id].matched = true;
+      deck[second.id].matched = true;
+      markMatched(first.el, second.el);
+      first = second = null;
+      matches += 1;
+      if(matches === deck.length / 2) finish();
+    } else {
+      // no match — flip back
+      lock = true;
+      setTimeout(() => {
+        unflip(first.el); unflip(second.el);
+        first = second = null;
+        lock = false;
+      }, 650);
+    }
+  });
+
+  // Keyboard support: flip with Enter/Space
+  board.addEventListener('keydown', e => {
+    if(e.key !== 'Enter' && e.key !== ' ') return;
+    const cardEl = e.target.closest('.card');
+    if(cardEl){ e.preventDefault(); cardEl.click(); }
+  });
+
+  // Controls
+  newBtn.addEventListener('click', newGame);
+  sizeSel.addEventListener('change', newGame);
+
+  // Modal buttons
+  again.addEventListener('click', () => { modal.classList.remove('show'); modal.setAttribute('aria-hidden','true'); newGame(); });
+  closeBtn.addEventListener('click', () => { modal.classList.remove('show'); modal.setAttribute('aria-hidden','true'); });
+  modal.addEventListener('click', (e) => { if(e.target === modal){ modal.classList.remove('show'); modal.setAttribute('aria-hidden','true'); } });
+
+  // Initial
+  updateBestLabel();
+  newGame();
+})();
+document.addEventListener("contextmenu", e => e.preventDefault());
+</script>
+</body>
+</html>
